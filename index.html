@@ -122,13 +122,16 @@ document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>cur&&transform(b
 $('#n').oninput=()=>$('#nv').textContent=$('#n').value;
 $('#n').onchange=()=>cur&&update();
 
+const mobile=navigator.userAgentData?navigator.userAgentData.mobile:/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 $('#share').onclick=async()=>{
-  if(blobs.length>10){return pop('ブラウザからの共有は10枚までです。11枚以上は「画像を保存」してからXで選んでください。');return;}
+  if(!mobile){window.open('https://x.com/compose/post','_blank');await saveAll();return pop('保存した画像を、開いたXの投稿画面にドラッグしてください。');}
+  if(blobs.length>10)return pop('ブラウザからの共有は10枚までです。11枚以上は「画像を保存」してからXで選んでください。');
   if(!navigator.canShare||!navigator.canShare({files:blobs})){msg('このブラウザは共有に非対応です。「画像を保存」を使ってください');return;}
   try{await navigator.share({files:blobs});}catch(e){if(e.name!=='AbortError')msg('共有に失敗しました: '+e.message);}
 };
 
-$('#save').onclick=async()=>{
+async function saveAll(){
   msg('保存中…（複数ダウンロードの確認が出たら許可）');
   for(const f of blobs){
     const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click();
@@ -136,7 +139,8 @@ $('#save').onclick=async()=>{
     await new Promise(r=>setTimeout(r,250));
   }
   msg(`${blobs.length}枚保存しました。Xアプリで順に選択してください`);
-};
+}
+$('#save').onclick=saveAll;
 </script>
 </body>
 </html>
