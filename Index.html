@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Slicer</title>
+<meta name="description" content="画像を縦に分割してXに投稿。画像は端末内で処理され、送信されません。">
+<meta property="og:title" content="Slicer">
+<meta property="og:description" content="画像を縦に分割してXに投稿。画像は端末内で処理され、送信されません。">
+<meta property="og:url" content="https://llepsism-del.github.io/slicer/">
+<meta name="twitter:card" content="summary">
+<style>
+:root{--b:#1d6bff;--g:#e6e9ef;--t:#1a1a1a}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,sans-serif;color:var(--t);background:#fff}
+main{max-width:720px;margin:auto;padding:16px}
+h1{font-size:18px;margin:0 0 12px}h1 b{color:var(--b)}
+#drop{display:block;border:2px dashed var(--g);border-radius:12px;padding:28px;text-align:center;color:#888;cursor:pointer}
+#drop.on{border-color:var(--b);color:var(--b)}
+input[type=file]{display:none}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;align-items:center}
+button{font:inherit;border:1px solid var(--g);background:#fff;color:var(--t);border-radius:8px;padding:8px 12px;cursor:pointer}
+button:active{background:#f3f6ff}
+button.p{background:var(--b);border-color:var(--b);color:#fff}
+button:disabled{opacity:.4}
+input[type=range]{flex:1;accent-color:var(--b)}#nv{min-width:2em;color:var(--b)}
+dialog{border:0;border-radius:12px;padding:20px;max-width:320px;box-shadow:0 8px 32px #0003}dialog::backdrop{background:#0004}dialog p{margin:0 0 16px}dialog form{text-align:right}
+#pv{display:flex;gap:3px;width:100%}
+#pv canvas{flex:1;min-width:0;height:auto;border-radius:3px;background:#f4f4f4}
+#msg{font-size:13px;color:#888;min-height:1.5em}
+#app{display:none}
+footer{font-size:12px;color:#aaa;margin-top:24px}
+</style>
+</head>
+<body>
+<main>
+<h1>Slicer<b>.</b></h1>
+<label id="drop">画像を選択 / ドロップ<input type="file" id="f" accept="image/*"></label>
+<div id="app">
+  <div class="row">
+    <button data-op="l">⟲ 90°</button>
+    <button data-op="r">⟳ 90°</button>
+    <button data-op="h">⇆ 左右反転</button>
+    <button data-op="v">⇅ 上下反転</button>
+    <button data-op="x">元に戻す</button>
+  </div>
+  <div class="row">分割数 <input type="range" id="n" value="10" min="2" max="20"> <b id="nv">10</b></div>
+  <div id="pv"></div>
+  <div class="row">
+    <button class="p" id="share">Xに投稿（共有）</button>
+    <button id="save">画像を保存</button>
+  </div>
+  <div id="msg"></div>
+</div>
+<footer>画像は端末内で処理され、どこにも送信されません。</footer>
+</main>
+<dialog id="dlg"><p id="dm"></p><form method="dialog"><button class="p">OK</button></form></dialog>
+<script>
+const $=s=>document.querySelector(s);
+let orig=null,cur=null,blobs=[],busy=null,name='img';
+
+function load(file){
+  if(!file||!file.type.startsWith('image/'))return;
+  name=file.name.replace(/\.[^.]+$/,'')||'img';
+  const img=new Image(),url=URL.createObjectURL(file);
+  img.onload=()=>{
+    const c=document.createElement('canvas');
+    c.width=img.naturalWidth;c.height=img.naturalHeight;
+    c.getContext('2d').drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+    orig=c;cur=c;$('#app').style.display='block';update();
+  };
+  img.src=url;
+}
+
+function transform(op){
+  if(op==='x'){cur=orig;return update();}
+  const rot=op==='l'||op==='r',c=document.createElement('canvas');
+  c.width=rot?cur.height:cur.width;c.height=rot?cur.width:cur.height;
+  const x=c.getContext('2d');
+  if(op==='r'){x.translate(c.width,0);x.rotate(Math.PI/2);}
+  if(op==='l'){x.translate(0,c.height);x.rotate(-Math.PI/2);}
+  if(op==='h'){x.translate(c.width,0);x.scale(-1,1);}
+  if(op==='v'){x.translate(0,c.height);x.scale(1,-1);}
+  x.drawImage(cur,0,0);cur=c;update();
+}
+
+function cuts(){
+  const n=Math.max(2,Math.min(20,+$('#n').value||10)),W=cur.width,a=[];
+  for(let i=0;i<n;i++){const x0=Math.round(i*W/n),x1=Math.round((i+1)*W/n);a.push([x0,x1-x0]);}
+  return a;
+}
+
+function update(){
+  const pv=$('#pv');pv.innerHTML='';
+  const parts=cuts(),H=cur.height,s=Math.min(1,400/H);
+  for(const [x,w] of parts){
+    const c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(w*s));c.height=Math.round(H*s);
+    c.getContext('2d').drawImage(cur,x,0,w,H,0,0,c.width,c.height);
+    pv.appendChild(c);
+  }
+  // 共有時に間に合うよう、先に書き出しておく
+  blobs=[];$('#share').disabled=$('#save').disabled=true;msg('書き出し中…');
+  const job=busy=Promise.all(parts.map(([x,w],i)=>new Promise(res=>{
+    const c=document.createElement('canvas');c.width=w;c.height=H;
+    c.getContext('2d').drawImage(cur,x,0,w,H,0,0,w,H);
+    c.toBlob(b=>res(new File([b],`${name}_${String(i+1).padStart(2,'0')}.jpg`,{type:'image/jpeg'})),'image/jpeg',.92);
+  }))).then(f=>{if(job!==busy)return;blobs=f;$('#share').disabled=$('#save').disabled=false;msg(`${f.length}枚 / ${(f.reduce((s,b)=>s+b.size,0)/1048576).toFixed(1)}MB`);});
+}
+
+function msg(t){$('#msg').textContent=t;}
+function pop(t){$('#dm').textContent=t;$('#dlg').showModal();}
+
+$('#f').onchange=e=>load(e.target.files[0]);
+const d=$('#drop');
+d.ondragover=e=>{e.preventDefault();d.classList.add('on');};
+d.ondragleave=()=>d.classList.remove('on');
+d.ondrop=e=>{e.preventDefault();d.classList.remove('on');load(e.dataTransfer.files[0]);};
+document.onpaste=e=>{const it=[...e.clipboardData.items].find(i=>i.type.startsWith('image/'));if(it)load(it.getAsFile());};
+document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>cur&&transform(b.dataset.op));
+$('#n').oninput=()=>$('#nv').textContent=$('#n').value;
+$('#n').onchange=()=>cur&&update();
+
+$('#share').onclick=async()=>{
+  if(blobs.length>10){return pop('ブラウザからの共有は10枚までです。11枚以上は「画像を保存」してからXで選んでください。');return;}
+  if(!navigator.canShare||!navigator.canShare({files:blobs})){msg('このブラウザは共有に非対応です。「画像を保存」を使ってください');return;}
+  try{await navigator.share({files:blobs});}catch(e){if(e.name!=='AbortError')msg('共有に失敗しました: '+e.message);}
+};
+
+$('#save').onclick=async()=>{
+  msg('保存中…（複数ダウンロードの確認が出たら許可）');
+  for(const f of blobs){
+    const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    await new Promise(r=>setTimeout(r,250));
+  }
+  msg(`${blobs.length}枚保存しました。Xアプリで順に選択してください`);
+};
+</script>
+</body>
+</html>
