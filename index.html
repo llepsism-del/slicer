@@ -39,11 +39,11 @@ footer{font-size:12px;color:#aaa;margin-top:24px}
 <label id="drop">画像を選択 / ドロップ<input type="file" id="f" accept="image/*"></label>
 <div id="app">
   <div class="row">
-    <button data-op="l">⟲ 90°</button>
-    <button data-op="r">⟳ 90°</button>
-    <button data-op="h">⇆ 左右反転</button>
-    <button data-op="v">⇅ 上下反転</button>
-    <button data-op="x">元に戻す</button>
+    <button class="ic" data-op="l" title="左に90°回転" aria-label="左に90°回転"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v5h5"/><path d="M3.5 9A8.5 8.5 0 1 1 5 17"/></svg></button>
+    <button class="ic" data-op="r" title="右に90°回転" aria-label="右に90°回転"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4v5h-5"/><path d="M20.5 9A8.5 8.5 0 1 0 19 17"/></svg></button>
+    <button class="ic" data-op="h" title="左右反転" aria-label="左右反転"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18" stroke-dasharray="2 2.5"/><path d="M9 6L3 18h6z"/><path d="M15 6l6 12h-6z"/></svg></button>
+    <button class="ic" data-op="v" title="上下反転" aria-label="上下反転"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18" stroke-dasharray="2 2.5"/><path d="M6 9L18 3v6z"/><path d="M6 15l12 6v-6z"/></svg></button>
+    <button class="ic" data-op="x" title="元に戻す" aria-label="元に戻す"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
   </div>
   <div class="row">分割数 <input type="range" id="n" value="10" min="2" max="20"> <b id="nv">10</b></div>
   <div id="pv"></div>
