@@ -23,6 +23,7 @@ button{font:inherit;border:1px solid var(--g);background:#fff;color:var(--t);bor
 button:active{background:#f3f6ff}
 button.p{background:var(--b);border-color:var(--b);color:#fff}
 button:disabled{opacity:.4}
+button.ic{display:inline-flex;padding:10px 16px}
 input[type=range]{flex:1;accent-color:var(--b)}#nv{min-width:2em;color:var(--b)}
 dialog{border:0;border-radius:12px;padding:20px;max-width:320px;box-shadow:0 8px 32px #0003}dialog::backdrop{background:#0004}dialog p{margin:0 0 16px}dialog form{text-align:right}
 #pv{display:flex;gap:3px;width:100%}
@@ -47,8 +48,8 @@ footer{font-size:12px;color:#aaa;margin-top:24px}
   <div class="row">分割数 <input type="range" id="n" value="10" min="2" max="20"> <b id="nv">10</b></div>
   <div id="pv"></div>
   <div class="row">
-    <button class="p" id="share">Xに投稿（共有）</button>
-    <button id="save">画像を保存</button>
+    <button class="p ic" id="share" title="共有" aria-label="共有"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+    <button class="ic" id="save" title="保存" aria-label="保存"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg></button>
   </div>
   <div id="msg"></div>
 </div>
@@ -122,12 +123,9 @@ document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>cur&&transform(b
 $('#n').oninput=()=>$('#nv').textContent=$('#n').value;
 $('#n').onchange=()=>cur&&update();
 
-const mobile=navigator.userAgentData?navigator.userAgentData.mobile:/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
 $('#share').onclick=async()=>{
-  if(!mobile){window.open('https://x.com/compose/post','_blank');await saveAll();return pop('保存した画像を、開いたXの投稿画面にドラッグしてください。');}
-  if(blobs.length>10)return pop('ブラウザからの共有は10枚までです。11枚以上は「画像を保存」してからXで選んでください。');
-  if(!navigator.canShare||!navigator.canShare({files:blobs})){msg('このブラウザは共有に非対応です。「画像を保存」を使ってください');return;}
+  if(blobs.length>10)return pop('ブラウザからの共有は10枚までです。11枚以上は保存ボタンで保存してからXで選んでください。');
+  if(!navigator.canShare||!navigator.canShare({files:blobs})){msg('このブラウザは共有に非対応です。保存ボタンを使ってください');return;}
   try{await navigator.share({files:blobs});}catch(e){if(e.name!=='AbortError')msg('共有に失敗しました: '+e.message);}
 };
 
